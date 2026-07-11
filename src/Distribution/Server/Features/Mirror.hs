@@ -93,7 +93,8 @@ mirrorFeature ServerEnv{serverBlobStore = store}
                          , updateSetPackageUploader
                          }
               UserFeature{..}
-              mirrorersState mirrorGroup mirrorGroupResource
+              mirrorersState
+              mirrorGroup mirrorGroupResource
   = (MirrorFeature{..}, mirrorersGroupDesc)
   where
     mirrorFeatureInterface = (emptyHackageFeature "mirror") {
