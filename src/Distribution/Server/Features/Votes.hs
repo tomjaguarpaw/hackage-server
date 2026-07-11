@@ -9,6 +9,7 @@ module Distribution.Server.Features.Votes
 
 import Distribution.Server.Features.Votes.Types (Score)
 import qualified Distribution.Server.Features.Votes.State as Acid
+import Distribution.Server.Features.Votes.State (votesScore)
 import qualified Distribution.Server.Features.Votes.Render as Render
 
 import Distribution.Server.Framework
@@ -131,7 +132,7 @@ votesFeature  ServerEnv{..}
       cacheControlWithoutETag [Public, maxAgeMinutes 10]
       votesMap <- queryState votesState Acid.GetAllPackageVoteSets
       ok . toResponse $ objectL
-        [ (display pkgname, toJSON (Acid.votesScore pkgMap))
+        [ (display pkgname, toJSON (votesScore pkgMap))
         | (pkgname, pkgMap) <- Map.toList votesMap ]
 
     -- Get the number of votes a package has. If the package
