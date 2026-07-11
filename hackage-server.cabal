@@ -370,6 +370,7 @@ library
       Distribution.Server.Features.Html.HtmlUtilities
       Distribution.Server.Features.HoogleData
       Distribution.Server.Features.HaskellPlatform
+      Distribution.Server.Features.HaskellPlatform.Acid
       Distribution.Server.Features.HaskellPlatform.State
       Distribution.Server.Features.PackageInfoJSON
       Distribution.Server.Features.Search
