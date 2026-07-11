@@ -13,7 +13,7 @@ import Distribution.Server.Framework
 import Distribution.Server.Features.Core
 import Distribution.Server.Features.Users
 
-import Distribution.Server.Users.State
+import Distribution.Server.Features.Mirror.Acid (mirrorersStateComponent)
 import Distribution.Server.Packages.Types
 import Distribution.Server.Users.Backup
 import Distribution.Server.Users.Types
@@ -72,19 +72,6 @@ initMirrorFeature env@ServerEnv{serverStateDir} = do
           (mirrorersG, mirrorR) <- groupResourceAt "/packages/mirrorers" mirrorersGroupDesc
 
       return feature
-
-mirrorersStateComponent :: FilePath -> IO (StateComponent AcidState MirrorClients)
-mirrorersStateComponent stateDir = do
-  st <- openLocalStateFrom (stateDir </> "db" </> "MirrorClients") initialMirrorClients
-  return StateComponent {
-      stateDesc    = "Mirror clients"
-    , stateHandle  = st
-    , getState     = query st GetMirrorClients
-    , putState     = update st . ReplaceMirrorClients . mirrorClients
-    , backupState  = \_ (MirrorClients clients) -> [csvToBackup ["clients.csv"] $ groupToCSV clients]
-    , restoreState = MirrorClients <$> groupBackup ["clients.csv"]
-    , resetState   = mirrorersStateComponent
-    }
 
 mirrorFeature :: ServerEnv
               -> CoreFeature
