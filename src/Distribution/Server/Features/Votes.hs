@@ -9,8 +9,8 @@ module Distribution.Server.Features.Votes
 
 import Distribution.Server.Features.Votes.Types (Score)
 import qualified Distribution.Server.Features.Votes.State as Acid
-import Distribution.Server.Features.Votes.State (votesScore)
 import qualified Distribution.Server.Features.Votes.Render as Render
+import Distribution.Server.Features.Votes.Store (votesScore)
 
 import Distribution.Server.Framework
 import Distribution.Server.Framework.BackupRestore
