@@ -4,14 +4,19 @@
 --
 module Distribution.Server.Features.Votes
   ( VotesFeature(..)
+  , Backend(..)
+  , Store(..)
   , initVotesFeature
+  , initVotesFeatureWith
   ) where
 
 import Distribution.Server.Features.Votes.Types (Score)
-import Distribution.Server.Features.Votes.Acid (votesStateComponent)
-import qualified Distribution.Server.Features.Votes.State as Acid
+import Distribution.Server.Features.Votes.Acid (acidStore)
 import qualified Distribution.Server.Features.Votes.Render as Render
-import Distribution.Server.Features.Votes.Store (votesScore)
+import Distribution.Server.Features.Votes.Store
+  ( votesScore
+  , Backend(..)
+  , Store(..) )
 
 import Distribution.Server.Framework
 
@@ -53,7 +58,15 @@ initVotesFeature :: ServerEnv
                       -> UserFeature
                       -> IO VotesFeature)
 initVotesFeature env@ServerEnv{serverStateDir} = do
-  dbVotesState      <- votesStateComponent serverStateDir
+  initVotesFeatureWith (acidStore serverStateDir) env
+
+initVotesFeatureWith :: IO Backend
+                     -> ServerEnv
+                     -> IO ( CoreFeature
+                        -> UserFeature
+                        -> IO VotesFeature )
+initVotesFeatureWith openVotesStore env = do
+  dbVotesState      <- openVotesStore
   updateVotes       <- newHook
 
   return $ \coref@CoreFeature{..} userf@UserFeature{..} -> do
@@ -65,14 +78,14 @@ initVotesFeature env@ServerEnv{serverStateDir} = do
 
 -- | Default constructor for building this feature.
 votesFeature ::  ServerEnv
-             -> StateComponent AcidState Acid.VotesState
+             -> Backend
              -> CoreFeature                    -- To get site package list
              -> UserFeature                    -- To authenticate users
              -> Hook (PackageName, Float) ()
              -> VotesFeature
 
 votesFeature  ServerEnv{..}
-              votesState
+              Backend{backendStore = votesState, backendState}
               CoreFeature { coreResource = CoreResource{..} }
               UserFeature{..}
               votesUpdated
@@ -83,7 +96,7 @@ votesFeature  ServerEnv{..}
         featureResources = [ packagesVotesResource
                            , packageVotesResource
                            ]
-      , featureState     = [abstractAcidStateComponent votesState]
+      , featureState     = backendState
       }
 
 
@@ -112,7 +125,7 @@ votesFeature  ServerEnv{..}
     servePackageVotesGet :: DynamicPath -> ServerPartE Response
     servePackageVotesGet _ = do
       cacheControlWithoutETag [Public, maxAgeMinutes 10]
-      votesMap <- queryState votesState Acid.GetAllPackageVoteSets
+      votesMap <- getAllPackageVoteSets votesState
       ok . toResponse $ objectL
         [ (display pkgname, toJSON (votesScore pkgMap))
         | (pkgname, pkgMap) <- Map.toList votesMap ]
@@ -144,7 +157,7 @@ votesFeature  ServerEnv{..}
         "2" -> pure 2
         "3" -> pure 3
         _   -> fail "invalid score value received"
-      _ <- updateState votesState (Acid.AddVote pkgname uid score)
+      _ <- addVote votesState pkgname uid score
       pkgScore <- pkgNumScore pkgname
       runHook_ votesUpdated (pkgname, pkgScore)
       ok . toResponse $ "Package voted for successfully"
@@ -157,7 +170,7 @@ votesFeature  ServerEnv{..}
       pkgname <- packageInPath dpath
       guardValidPackageName pkgname
 
-      success <- updateState votesState (Acid.RemoveVote pkgname uid)
+      success <- removeVote votesState pkgname uid
       pkgScore <- pkgNumScore pkgname
       when success $ runHook_ votesUpdated (pkgname, pkgScore)
 
@@ -171,20 +184,20 @@ votesFeature  ServerEnv{..}
     -- package in question.
     didUserVote :: MonadIO m => PackageName -> UserId -> m Bool
     didUserVote pkgname uid =
-      queryState votesState (Acid.GetPackageUserVoted pkgname uid)
+      getPackageUserVoted votesState pkgname uid
 
     -- Returns the number of votes a package has.
     pkgNumVotes :: MonadIO m => PackageName -> m Int
     pkgNumVotes pkgname =
-      queryState votesState (Acid.GetPackageVoteCount pkgname)
+      getPackageVoteCount votesState pkgname
 
     pkgNumScore :: MonadIO m => PackageName -> m Float
     pkgNumScore pkgname =
-      queryState votesState (Acid.GetPackageVoteScore pkgname)
+      getPackageVoteScore votesState pkgname
 
     pkgUserVote :: MonadIO m => PackageName -> UserId -> m (Maybe Score)
     pkgUserVote pkgname uid =
-      queryState votesState (Acid.GetPackageUserVote pkgname uid)
+      getPackageUserVote votesState pkgname uid
 
     -- Renders the HTML for the "Votes:" section on package pages.
     renderVotesHtml :: PackageName -> ServerPartE X.Html
