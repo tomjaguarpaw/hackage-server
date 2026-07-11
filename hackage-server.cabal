@@ -372,6 +372,7 @@ library
       Distribution.Server.Features.HaskellPlatform
       Distribution.Server.Features.HaskellPlatform.Acid
       Distribution.Server.Features.HaskellPlatform.State
+      Distribution.Server.Features.HaskellPlatform.Store
       Distribution.Server.Features.PackageInfoJSON
       Distribution.Server.Features.Search
       Distribution.Server.Features.Search.BM25F

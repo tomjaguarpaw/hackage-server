@@ -7,16 +7,14 @@ module Distribution.Server.Features.HaskellPlatform (
 
 import Distribution.Server.Framework
 
-import Distribution.Server.Features.HaskellPlatform.Acid (platformStateComponent)
-import qualified Distribution.Server.Features.HaskellPlatform.State as Acid
+import Distribution.Server.Features.HaskellPlatform.Acid (acidStore)
+import qualified Distribution.Server.Features.HaskellPlatform.Store as Store
 
 import Distribution.Package
 import Distribution.Version
 import Distribution.Text
 
 import Data.Function
-import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 
 -- Note: this can be generalized into dividing Hackage up into however many
@@ -47,15 +45,15 @@ data PlatformResource = PlatformResource {
 
 initPlatformFeature :: ServerEnv -> IO (IO PlatformFeature)
 initPlatformFeature ServerEnv{serverStateDir} = do
-    platformState <- platformStateComponent serverStateDir
+    platformState <- acidStore serverStateDir
 
     return $ do
       let feature = platformFeature platformState
       return feature
 
-platformFeature :: StateComponent AcidState Acid.PlatformPackages
+platformFeature :: Store.Backend
                 -> PlatformFeature
-platformFeature platformState
+platformFeature Store.Backend{..}
   = PlatformFeature{..}
   where
     platformFeatureInterface = (emptyHackageFeature "platform") {
@@ -65,7 +63,7 @@ platformFeature platformState
               platformPackage
             , platformPackages
             ]
-      , featureState = [abstractAcidStateComponent platformState]
+      , featureState = backendState
       }
 
     platformResource = fix $ \r -> PlatformResource
@@ -88,14 +86,13 @@ platformFeature platformState
     ------------------------------------------
     -- functionality: showing status for a single package, and for all packages, adding a package, deleting a package
     platformVersions :: MonadIO m => PackageName -> m [Version]
-    platformVersions pkgname = liftM Set.toList $ queryState platformState $ Acid.GetPlatformPackage pkgname
+    platformVersions = Store.platformVersions backendStore
 
     platformPackageLatest :: MonadIO m => m [(PackageName, Version)]
-    platformPackageLatest = liftM (Map.toList . Map.map Set.findMax . Acid.blessedPackages) $ queryState platformState Acid.GetPlatformPackages
+    platformPackageLatest = Store.platformPackageLatest backendStore
 
     setPlatform :: MonadIO m => PackageName -> [Version] -> m ()
-    setPlatform pkgname versions = updateState platformState $ Acid.SetPlatformPackage pkgname (Set.fromList versions)
+    setPlatform = Store.setPlatform backendStore
 
     removePlatform :: MonadIO m => PackageName -> m ()
-    removePlatform pkgname = updateState platformState $ Acid.SetPlatformPackage pkgname Set.empty
-
+    removePlatform = Store.removePlatform backendStore

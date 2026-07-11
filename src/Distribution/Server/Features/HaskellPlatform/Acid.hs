@@ -1,13 +1,30 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Distribution.Server.Features.HaskellPlatform.Acid
-  ( platformStateComponent
+  ( acidStore
   ) where
 
 import Distribution.Server.Framework
 import Distribution.Server.Framework.BackupRestore
 
 import qualified Distribution.Server.Features.HaskellPlatform.State as Acid
+import Distribution.Server.Features.HaskellPlatform.Store
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+
+acidStore :: FilePath -> IO Backend
+acidStore stateDir = do
+  platformState <- platformStateComponent stateDir
+  pure Backend
+    { backendStore = Store
+        { platformVersions = \pkgname -> fmap Set.toList $ queryState platformState $ Acid.GetPlatformPackage pkgname
+        , platformPackageLatest = fmap (Map.toList . Map.map Set.findMax . Acid.blessedPackages) $ queryState platformState Acid.GetPlatformPackages
+        , setPlatform = \pkgname versions -> updateState platformState $ Acid.SetPlatformPackage pkgname (Set.fromList versions)
+        , removePlatform = \pkgname -> updateState platformState $ Acid.SetPlatformPackage pkgname Set.empty
+        }
+    , backendState = [abstractAcidStateComponent platformState]
+    }
 
 platformStateComponent :: FilePath -> IO (StateComponent AcidState Acid.PlatformPackages)
 platformStateComponent stateDir = do
