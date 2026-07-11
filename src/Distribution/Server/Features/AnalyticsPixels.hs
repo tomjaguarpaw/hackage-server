@@ -96,8 +96,8 @@ analyticsPixelsFeature  ServerEnv{..}
     userAnalyticsPixelsResource = resourceAt "/user/:username/analytics-pixels.:format"
 
     getPackageAnalyticsPixels :: MonadIO m => PackageName -> m (Set AnalyticsPixel)
-    getPackageAnalyticsPixels name =
-        Store.getPackageAnalyticsPixels analyticsPixelsState name
+    getPackageAnalyticsPixels =
+        Store.getPackageAnalyticsPixels analyticsPixelsState
 
     addPackageAnalyticsPixel :: MonadIO m => PackageName -> AnalyticsPixel -> m Bool
     addPackageAnalyticsPixel name pixel = do
