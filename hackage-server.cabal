@@ -385,6 +385,7 @@ library
       Distribution.Server.Features.Search.TermBag
       Distribution.Server.Features.Sitemap.Functions
       Distribution.Server.Features.Votes
+      Distribution.Server.Features.Votes.Acid
       Distribution.Server.Features.Votes.Render
       Distribution.Server.Features.Votes.State
       Distribution.Server.Features.Votes.Store
