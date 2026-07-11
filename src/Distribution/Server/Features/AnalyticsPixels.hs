@@ -10,9 +10,9 @@ module Distribution.Server.Features.AnalyticsPixels
 
 import Data.Set (Set)
 
-import Distribution.Server.Features.AnalyticsPixels.Acid (analyticsPixelsStateComponent)
+import Distribution.Server.Features.AnalyticsPixels.Acid (acidStore)
+import qualified Distribution.Server.Features.AnalyticsPixels.Store as Store
 import Distribution.Server.Features.AnalyticsPixels.Types
-import qualified Distribution.Server.Features.AnalyticsPixels.State as Acid
 
 import Distribution.Server.Framework
 
@@ -53,7 +53,7 @@ initAnalyticsPixelsFeature :: ServerEnv
                             -> UploadFeature
                             -> IO AnalyticsPixelsFeature)
 initAnalyticsPixelsFeature env@ServerEnv{serverStateDir} = do
-  dbAnalyticsPixelsState <- analyticsPixelsStateComponent serverStateDir
+  dbAnalyticsPixelsState <- acidStore serverStateDir
   analyticsPixelAdded    <- newHook
   analyticsPixelRemoved  <- newHook
 
@@ -66,7 +66,7 @@ initAnalyticsPixelsFeature env@ServerEnv{serverStateDir} = do
 
 -- | Default constructor for building this feature.
 analyticsPixelsFeature :: ServerEnv
-                      -> StateComponent AcidState Acid.AnalyticsPixelsState
+                      -> Store.Backend
                       -> CoreFeature                          -- To get site package list
                       -> UserFeature                          -- To authenticate users
                       -> UploadFeature                        -- For accessing package maintainers and trustees
@@ -75,7 +75,7 @@ analyticsPixelsFeature :: ServerEnv
                       -> AnalyticsPixelsFeature
 
 analyticsPixelsFeature  ServerEnv{..}
-              analyticsPixelsState
+              Store.Backend{backendStore = analyticsPixelsState, backendState}
               CoreFeature { coreResource = CoreResource{..} }
               UserFeature{..}
               UploadFeature{..}
@@ -86,7 +86,7 @@ analyticsPixelsFeature  ServerEnv{..}
     analyticsPixelsFeatureInterface  = (emptyHackageFeature "AnalyticsPixels") {
         featureDesc      = "Allow users to attach analytics pixels to their packages",
         featureResources = [analyticsPixelsResource, userAnalyticsPixelsResource]
-      , featureState     = [abstractAcidStateComponent analyticsPixelsState]
+      , featureState     = backendState
       }
 
     analyticsPixelsResource :: Resource
@@ -97,15 +97,15 @@ analyticsPixelsFeature  ServerEnv{..}
 
     getPackageAnalyticsPixels :: MonadIO m => PackageName -> m (Set AnalyticsPixel)
     getPackageAnalyticsPixels name =
-        queryState analyticsPixelsState (Acid.AnalyticsPixelsForPackage name)
+        Store.getPackageAnalyticsPixels analyticsPixelsState name
 
     addPackageAnalyticsPixel :: MonadIO m => PackageName -> AnalyticsPixel -> m Bool
     addPackageAnalyticsPixel name pixel = do
-        added <- updateState analyticsPixelsState (Acid.AddPackageAnalyticsPixel name pixel)
+        added <- Store.addPackageAnalyticsPixel analyticsPixelsState name pixel
         when added $ runHook_ analyticsPixelAdded (name, pixel)
         pure added
 
     removePackageAnalyticsPixel :: MonadIO m => PackageName -> AnalyticsPixel -> m ()
     removePackageAnalyticsPixel name pixel = do
-        updateState analyticsPixelsState (Acid.RemovePackageAnalyticsPixel name pixel)
+        Store.removePackageAnalyticsPixel analyticsPixelsState name pixel
         runHook_ analyticsPixelRemoved (name, pixel)
