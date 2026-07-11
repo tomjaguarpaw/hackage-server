@@ -17,6 +17,7 @@ import Distribution.Server.Framework
 import Distribution.Server.Framework.BlobStorage
 import qualified Distribution.Server.Framework.BlobStorage as BlobStorage
 import Distribution.Server.Framework.BackupRestore
+import Distribution.Server.Features.TarIndexCache.Acid (tarIndexCacheStateComponent)
 import qualified Distribution.Server.Features.TarIndexCache.State as Acid
 import Distribution.Server.Features.Users
 import Distribution.Server.Packages.Types
@@ -50,23 +51,6 @@ initTarIndexCacheFeature env@ServerEnv{serverStateDir} = do
     return $ \users -> do
       let feature = tarIndexCacheFeature env users tarIndexCache
       return feature
-
-tarIndexCacheStateComponent :: FilePath -> IO (StateComponent AcidState Acid.TarIndexCache)
-tarIndexCacheStateComponent stateDir = do
-  st <- openLocalStateFrom (stateDir </> "db" </> "TarIndexCache") Acid.initialTarIndexCache
-  return StateComponent {
-      stateDesc    = "Mapping from tarball blob IDs to tarindex blob IDs"
-    , stateHandle  = st
-    , getState     = query st Acid.GetTarIndexCache
-    , putState     = update st . Acid.ReplaceTarIndexCache
-    , resetState   = tarIndexCacheStateComponent
-    -- We don't backup the tar indices, but reconstruct them on demand
-    , backupState  = \_ _ -> []
-    , restoreState = RestoreBackup {
-                         restoreEntry    = error "The impossible happened"
-                       , restoreFinalize = return Acid.initialTarIndexCache
-                       }
-    }
 
 tarIndexCacheFeature :: ServerEnv
                      -> UserFeature
