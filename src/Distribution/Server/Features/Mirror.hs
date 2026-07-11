@@ -13,15 +13,14 @@ import Distribution.Server.Framework
 import Distribution.Server.Features.Core
 import Distribution.Server.Features.Users
 
-import Distribution.Server.Features.Mirror.Acid (mirrorersStateComponent)
+import Distribution.Server.Features.Mirror.Acid (acidStore)
+import qualified Distribution.Server.Features.Mirror.Store as Store
 import Distribution.Server.Packages.Types
-import Distribution.Server.Users.Backup
 import Distribution.Server.Users.Types
 import Distribution.Server.Users.Users hiding (lookupUserName)
 import Distribution.Server.Users.Group (UserGroup(..), GroupDescription(..), nullDescription)
 import qualified Distribution.Server.Framework.BlobStorage as BlobStorage
 import qualified Distribution.Server.Packages.Unpack as Upload
-import Distribution.Server.Framework.BackupDump
 import Distribution.Server.Util.Parse (unpackUTF8)
 
 import Distribution.PackageDescription.Parsec (parseGenericPackageDescription, runParseResult)
@@ -61,7 +60,7 @@ initMirrorFeature :: ServerEnv
                       -> IO MirrorFeature)
 initMirrorFeature env@ServerEnv{serverStateDir} = do
     -- Canonical state
-    mirrorersState <- mirrorersStateComponent serverStateDir
+    mirrorersState <- acidStore serverStateDir
 
     return $ \core user@UserFeature{..} -> do
       -- Tie the knot with a do-rec
@@ -76,7 +75,7 @@ initMirrorFeature env@ServerEnv{serverStateDir} = do
 mirrorFeature :: ServerEnv
               -> CoreFeature
               -> UserFeature
-              -> StateComponent AcidState MirrorClients
+              -> Store.Backend
               -> UserGroup
               -> GroupResource
               -> (MirrorFeature, UserGroup)
@@ -93,7 +92,7 @@ mirrorFeature ServerEnv{serverBlobStore = store}
                          , updateSetPackageUploader
                          }
               UserFeature{..}
-              mirrorersState
+              Store.Backend{backendStore = mirrorersState, backendState}
               mirrorGroup mirrorGroupResource
   = (MirrorFeature{..}, mirrorersGroupDesc)
   where
@@ -109,7 +108,7 @@ mirrorFeature ServerEnv{serverBlobStore = store}
             [ groupResource     mirrorGroupResource
             , groupUserResource mirrorGroupResource
             ]
-      , featureState = [abstractAcidStateComponent mirrorersState]
+      , featureState = backendState
       }
 
     mirrorResource = MirrorResource {
@@ -140,9 +139,9 @@ mirrorFeature ServerEnv{serverBlobStore = store}
 
     mirrorersGroupDesc = UserGroup {
         groupDesc             = nullDescription { groupTitle = "Mirror clients" },
-        queryUserGroup        = queryState  mirrorersState   GetMirrorClientsList,
-        addUserToGroup        = updateState mirrorersState . AddMirrorClient,
-        removeUserFromGroup   = updateState mirrorersState . RemoveMirrorClient,
+        queryUserGroup        = Store.getMirrorClientsList mirrorersState,
+        addUserToGroup        = Store.addMirrorClient mirrorersState,
+        removeUserFromGroup   = Store.removeMirrorClient mirrorersState,
         groupsAllowedToDelete = [adminGroup],
         groupsAllowedToAdd    = [adminGroup]
     }
