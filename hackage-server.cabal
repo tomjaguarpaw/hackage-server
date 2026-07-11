@@ -407,6 +407,7 @@ library
       Distribution.Server.Features.Tags.State
       Distribution.Server.Features.Tags.Types
       Distribution.Server.Features.AnalyticsPixels
+      Distribution.Server.Features.AnalyticsPixels.Acid
       Distribution.Server.Features.AnalyticsPixels.State
       Distribution.Server.Features.AnalyticsPixels.Types
       Distribution.Server.Features.UserDetails

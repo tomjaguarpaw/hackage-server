@@ -10,11 +10,11 @@ module Distribution.Server.Features.AnalyticsPixels
 
 import Data.Set (Set)
 
+import Distribution.Server.Features.AnalyticsPixels.Acid (analyticsPixelsStateComponent)
 import Distribution.Server.Features.AnalyticsPixels.Types
 import qualified Distribution.Server.Features.AnalyticsPixels.State as Acid
 
 import Distribution.Server.Framework
-import Distribution.Server.Framework.BackupRestore
 
 import Distribution.Server.Features.Core
 import Distribution.Server.Features.Upload
@@ -63,24 +63,6 @@ initAnalyticsPixelsFeature env@ServerEnv{serverStateDir} = do
                   coref userf uploadf analyticsPixelAdded analyticsPixelRemoved
 
     return feature
-
--- | Define the backing store (i.e. database component)
-analyticsPixelsStateComponent :: FilePath -> IO (StateComponent AcidState Acid.AnalyticsPixelsState)
-analyticsPixelsStateComponent stateDir = do
-  st <- openLocalStateFrom (stateDir </> "db" </> "AnalyticsPixels") Acid.initialAnalyticsPixelsState
-  return StateComponent {
-      stateDesc    = "Backing store for AnalyticsPixels feature"
-    , stateHandle  = st
-    , getState     = query st Acid.GetAnalyticsPixelsState
-    , putState     = update st . Acid.ReplaceAnalyticsPixelsState
-    , resetState   = analyticsPixelsStateComponent
-    , backupState  = \_ _ -> []
-    , restoreState = RestoreBackup {
-                         restoreEntry    = error "Unexpected backup entry"
-                       , restoreFinalize = return Acid.initialAnalyticsPixelsState
-                       }
-   }
-
 
 -- | Default constructor for building this feature.
 analyticsPixelsFeature :: ServerEnv
