@@ -6,8 +6,8 @@ module Distribution.Server.Features.HaskellPlatform (
   ) where
 
 import Distribution.Server.Framework
-import Distribution.Server.Framework.BackupRestore
 
+import Distribution.Server.Features.HaskellPlatform.Acid (platformStateComponent)
 import qualified Distribution.Server.Features.HaskellPlatform.State as Acid
 
 import Distribution.Package
@@ -52,25 +52,6 @@ initPlatformFeature ServerEnv{serverStateDir} = do
     return $ do
       let feature = platformFeature platformState
       return feature
-
-platformStateComponent :: FilePath -> IO (StateComponent AcidState Acid.PlatformPackages)
-platformStateComponent stateDir = do
-  st <- openLocalStateFrom (stateDir </> "db" </> "Acid.PlatformPackages") Acid.initialPlatformPackages
-  return StateComponent {
-      stateDesc    = "Platform packages"
-    , stateHandle  = st
-    , getState     = query st Acid.GetPlatformPackages
-    , putState     = update st . Acid.ReplacePlatformPackages
-    , resetState   = platformStateComponent
-    -- TODO: backup
-    -- For now backup is just empty, as this package is basically featureless
-    -- It defines state, but there is no way at all to modify this state
-    , backupState  = \_ _ -> []
-    , restoreState = RestoreBackup {
-                         restoreEntry    = error "Unexpected backup entry for platform"
-                       , restoreFinalize = return Acid.initialPlatformPackages
-                       }
-    }
 
 platformFeature :: StateComponent AcidState Acid.PlatformPackages
                 -> PlatformFeature
