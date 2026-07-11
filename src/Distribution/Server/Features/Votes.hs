@@ -183,21 +183,21 @@ votesFeature  ServerEnv{..}
     -- Returns true if a user has previously voted for the
     -- package in question.
     didUserVote :: MonadIO m => PackageName -> UserId -> m Bool
-    didUserVote pkgname uid =
-      getPackageUserVoted votesState pkgname uid
+    didUserVote =
+      getPackageUserVoted votesState
 
     -- Returns the number of votes a package has.
     pkgNumVotes :: MonadIO m => PackageName -> m Int
-    pkgNumVotes pkgname =
-      getPackageVoteCount votesState pkgname
+    pkgNumVotes =
+      getPackageVoteCount votesState
 
     pkgNumScore :: MonadIO m => PackageName -> m Float
-    pkgNumScore pkgname =
-      getPackageVoteScore votesState pkgname
+    pkgNumScore =
+      getPackageVoteScore votesState
 
     pkgUserVote :: MonadIO m => PackageName -> UserId -> m (Maybe Score)
-    pkgUserVote pkgname uid =
-      getPackageUserVote votesState pkgname uid
+    pkgUserVote =
+      getPackageUserVote votesState
 
     -- Renders the HTML for the "Votes:" section on package pages.
     renderVotesHtml :: PackageName -> ServerPartE X.Html
