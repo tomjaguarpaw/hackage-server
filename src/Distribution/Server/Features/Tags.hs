@@ -154,7 +154,7 @@ tagsFeature :: CoreFeature
             -> MemState (Map PackageName (Set Tag, Set Tag))
             -> TagsFeature
 
-tagsFeature CoreFeature{ queryGetPackageIndex }
+tagsFeature CoreFeature{ queryLatestPackages }
             UploadFeature{ maintainersGroup, trusteesGroup }
             UserFeature{ guardAuthorised' }
             tagsState
@@ -200,8 +200,8 @@ tagsFeature CoreFeature{ queryGetPackageIndex }
 
     initImmutableTags :: IO ()
     initImmutableTags = do
-            index <- queryGetPackageIndex
-            let calcTags = Acid.tagPackages $ constructImmutableTagIndex index
+            latestPackages <- queryLatestPackages
+            let calcTags = Acid.tagPackages $ constructImmutableTagIndex latestPackages
             aliases <- mapM (queryState tagsAlias . Acid.GetTagAlias) $ Map.keys calcTags
             let calcTags' = Map.toList . Map.fromListWith Set.union $ zip aliases (Map.elems calcTags)
             forM_ calcTags' $ uncurry setCalculatedTag
@@ -240,14 +240,15 @@ tagsFeature CoreFeature{ queryGetPackageIndex }
     mergeTags targetTag deprTag =
         case simpleParse =<< targetTag of
             Just (Tag orig) -> do
-                index <- queryGetPackageIndex
+                latestPkgs <- queryLatestPackages
+                let pkgNames = packageName <$> latestPkgs
                 void $ updateState tagsAlias $ Acid.AddTagAlias (Tag orig) deprTag
-                void $ constructMergedTagIndex (Tag orig) deprTag index
+                void $ constructMergedTagIndex (Tag orig) deprTag pkgNames
             _ -> errBadRequest "Tag not recognised" [MText "Couldn't parse tag. It should be a single tag."]
 
     -- tags on merging
-    constructMergedTagIndex :: forall m. (Functor m, MonadIO m) => Tag -> Tag -> PackageIndex PkgInfo -> m Acid.PackageTags
-    constructMergedTagIndex orig depr = foldM addToTags Acid.emptyPackageTags . PackageIndex.allPackageNames
+    constructMergedTagIndex :: forall m. (Functor m, MonadIO m) => Tag -> Tag -> [PackageName] -> m Acid.PackageTags
+    constructMergedTagIndex orig depr = foldM addToTags Acid.emptyPackageTags
       where addToTags calcTags pn = do
                 pkgTags <- queryTagsForPackage pn
                 if Set.member depr pkgTags
@@ -312,10 +313,10 @@ constructTagIndex = foldl' addToTags Acid.emptyPackageTags . PackageIndex.allPac
             in Acid.setTags pkgname (Set.union categoryTags immutableTags) pkgTags
 
 -- tags on startup
-constructImmutableTagIndex :: PackageIndex PkgInfo -> Acid.PackageTags
-constructImmutableTagIndex = foldl' addToTags Acid.emptyPackageTags . PackageIndex.allPackagesByName
-  where addToTags calcTags pkgList =
-            let info = pkgDesc $ last pkgList
+constructImmutableTagIndex :: [PkgInfo] -> Acid.PackageTags
+constructImmutableTagIndex = foldl' addToTags Acid.emptyPackageTags
+  where addToTags calcTags pkg =
+            let info = pkgDesc pkg
                 !pn = packageName info
                 !tags = constructImmutableTags info
             in Acid.setTags pn (Set.fromList tags) calcTags

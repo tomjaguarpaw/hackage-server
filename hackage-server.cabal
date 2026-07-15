@@ -307,7 +307,9 @@ library
     Distribution.Server.Features.Browse.Options
     Distribution.Server.Features.Browse.Parsers
     Distribution.Server.Features.Core
+    Distribution.Server.Features.Core.Acid
     Distribution.Server.Features.Core.State
+    Distribution.Server.Features.Core.Store
     Distribution.Server.Features.Core.Backup
     Distribution.Server.Features.Security
     Distribution.Server.Features.Security.Backup
@@ -320,6 +322,10 @@ library
     Distribution.Server.Features.Security.SHA256
     Distribution.Server.Features.Security.State
     Distribution.Server.Features.Mirror
+    Distribution.Server.Features.Mirror.Acid
+    Distribution.Server.Features.Mirror.Store
+    Distribution.Server.Features.TarIndexCache.Acid
+    Distribution.Server.Features.TarIndexCache.Store
     Distribution.Server.Features.Upload
     Distribution.Server.Features.Upload.State
     Distribution.Server.Features.Upload.Backup
@@ -370,7 +376,9 @@ library
       Distribution.Server.Features.Html.HtmlUtilities
       Distribution.Server.Features.HoogleData
       Distribution.Server.Features.HaskellPlatform
+      Distribution.Server.Features.HaskellPlatform.Acid
       Distribution.Server.Features.HaskellPlatform.State
+      Distribution.Server.Features.HaskellPlatform.Store
       Distribution.Server.Features.PackageInfoJSON
       Distribution.Server.Features.Search
       Distribution.Server.Features.Search.BM25F
@@ -385,8 +393,10 @@ library
       Distribution.Server.Features.Search.TermBag
       Distribution.Server.Features.Sitemap.Functions
       Distribution.Server.Features.Votes
+      Distribution.Server.Features.Votes.Acid
       Distribution.Server.Features.Votes.Render
       Distribution.Server.Features.Votes.State
+      Distribution.Server.Features.Votes.Store
       Distribution.Server.Features.Votes.Types
       Distribution.Server.Features.Vouch
       Distribution.Server.Features.Vouch.State
@@ -403,7 +413,9 @@ library
       Distribution.Server.Features.Tags.State
       Distribution.Server.Features.Tags.Types
       Distribution.Server.Features.AnalyticsPixels
+      Distribution.Server.Features.AnalyticsPixels.Acid
       Distribution.Server.Features.AnalyticsPixels.State
+      Distribution.Server.Features.AnalyticsPixels.Store
       Distribution.Server.Features.AnalyticsPixels.Types
       Distribution.Server.Features.UserDetails
       Distribution.Server.Features.UserDetails.Acid
