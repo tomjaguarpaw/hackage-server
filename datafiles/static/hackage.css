@@ -437,7 +437,7 @@ table.properties td, table.properties th {
 }
 
 @media only screen and (min-width: 1280px) {
-  #table-of-contents {
+  div#table-of-contents {
     position: fixed;
     left: 10px;
     max-width: 10vw;
@@ -726,35 +726,35 @@ ul.links li form button {
 /* @group Front Matter */
 
 @media (prefers-color-scheme: dark) {
-  #table-of-contents {
+  div#table-of-contents {
     background: #222;
   }
 }
 @media (prefers-color-scheme: light) {
-  #table-of-contents {
+  div#table-of-contents {
     background:  #f7f7f7;
   }
 }
-#table-of-contents {
+div#table-of-contents {
   padding: 1em;
   margin: 0;
   margin-top: 1em;
 }
 
-#table-of-contents .caption {
+div#table-of-contents .caption {
   text-align: left;
   margin: 0;
   font-size: 1.08rem;
 }
 
-#table-of-contents ul {
+div#table-of-contents ul {
   list-style: none;
   margin: 0;
   margin-top: 10px;
   font-size: 95%;
 }
 
-#table-of-contents ul ul {
+div#table-of-contents ul ul {
   margin-left: 2em;
 }
 
