@@ -1,19 +1,17 @@
 module Distribution.Server.Features.AdminLog.Backup where
 
-import qualified Distribution.Server.Features.AdminLog.Acid as Acid
 import Distribution.Server.Features.AdminLog.Types
-import Distribution.Server.Users.Types (UserId)
+import qualified Distribution.Server.Features.AdminLog.State as State
 import Distribution.Server.Framework.BackupRestore
 
 import Data.Maybe(mapMaybe)
-import Data.Time (UTCTime)
 import qualified Data.ByteString.Lazy.Char8 as BS
 import Text.Read (readMaybe)
 import Distribution.Server.Util.Parse
 
-restoreAdminLogBackup :: RestoreBackup Acid.AdminLog
+restoreAdminLogBackup :: RestoreBackup State.AdminLog
 restoreAdminLogBackup =
-    go (Acid.AdminLog [])
+    go (State.AdminLog [])
   where
     go logs =
       RestoreBackup {
@@ -24,13 +22,12 @@ restoreAdminLogBackup =
       , restoreFinalize = return logs
       }
 
-importLogs :: Acid.AdminLog -> BS.ByteString -> Acid.AdminLog
-importLogs (Acid.AdminLog ls) =
-    Acid.AdminLog . (++ls) . mapMaybe fromRecord . lines . unpackUTF8
+importLogs :: State.AdminLog -> BS.ByteString -> State.AdminLog
+importLogs (State.AdminLog ls) =
+    State.AdminLog . (++ls) . mapMaybe fromRecord . lines . unpackUTF8
   where
-    fromRecord :: String -> Maybe (UTCTime,UserId,AdminAction,BS.ByteString)
+    fromRecord :: String -> Maybe AdminLogEntry
     fromRecord = readMaybe
 
-backupLogEntries :: [(UTCTime,UserId,AdminAction,BS.ByteString)] -> BS.ByteString
+backupLogEntries :: [AdminLogEntry] -> BS.ByteString
 backupLogEntries = packUTF8 . unlines . map show
-

@@ -7,6 +7,7 @@ import Distribution.Server.Framework
 
 import Data.SafeCopy (base, deriveSafeCopy)
 import qualified Data.ByteString.Lazy.Char8 as BS
+import Data.Time (UTCTime)
 
 data GroupDesc = MaintainerGroup BS.ByteString | AdminGroup | TrusteeGroup | OtherGroup BS.ByteString deriving (Eq, Ord, Read, Show)
 
@@ -23,3 +24,5 @@ instance MemSize AdminAction where
     memSize (Admin_GroupDelUser x y) = memSize2 x y
 
 deriveSafeCopy 0 'base ''AdminAction
+
+type AdminLogEntry = (UTCTime, UserId, AdminAction, BS.ByteString)
