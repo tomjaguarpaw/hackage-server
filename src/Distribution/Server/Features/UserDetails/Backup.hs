@@ -1,6 +1,6 @@
 module Distribution.Server.Features.UserDetails.Backup where
 
-import qualified Distribution.Server.Features.UserDetails.Acid as Acid
+import qualified Distribution.Server.Features.UserDetails.State as Acid
 import Distribution.Server.Features.UserDetails.Types
 import Distribution.Server.Framework.BackupDump
 import Distribution.Server.Framework.BackupRestore
@@ -87,4 +87,3 @@ userDetailsToCSV backuptype (Acid.UserDetailsTable tbl)
       Nothing                  -> ""
       Just AccountKindRealUser -> "real"
       Just AccountKindSpecial  -> "special"
-

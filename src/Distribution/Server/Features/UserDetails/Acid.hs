@@ -3,38 +3,17 @@
 module Distribution.Server.Features.UserDetails.Acid where
 
 import Distribution.Server.Features.UserDetails.Types
+import Distribution.Server.Features.UserDetails.State
+    (UserDetailsTable(..), emptyAccountDetails)
 import Distribution.Server.Framework
 
 import Distribution.Server.Users.Types
 
-import Data.SafeCopy (base, deriveSafeCopy)
-
-import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
 import Data.Text (Text)
-import qualified Data.Text as T
 
 import Control.Monad.Reader (ask)
 import Control.Monad.State (get, put)
-
-
--------------------------
--- Types of stored data
---
-
-newtype UserDetailsTable = UserDetailsTable (IntMap AccountDetails)
-  deriving (Eq, Show)
-
-emptyAccountDetails :: AccountDetails
-emptyAccountDetails   = AccountDetails T.empty T.empty Nothing T.empty
-
-emptyUserDetailsTable :: UserDetailsTable
-emptyUserDetailsTable = UserDetailsTable IntMap.empty
-
-$(deriveSafeCopy 0 'base ''UserDetailsTable)
-
-instance MemSize UserDetailsTable where
-    memSize (UserDetailsTable a) = memSize1 a
 
 
 ------------------------------
@@ -92,5 +71,4 @@ makeAcidic ''UserDetailsTable [
     'setUserAdminInfo,
     'deleteUserDetails
   ]
-
 
