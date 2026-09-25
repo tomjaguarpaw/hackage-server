@@ -1,10 +1,15 @@
 {-# LANGUAGE DeriveDataTypeable, TypeFamilies, TemplateHaskell,
     NamedFieldPuns, RecordWildCards #-}
-module Distribution.Server.Features.UserDetails.Acid where
+-- The shared persisted type lives in State while its Acid instance remains here.
+{-# OPTIONS_GHC -Wno-orphans #-}
+module Distribution.Server.Features.UserDetails.Acid
+  ( acidStore
+  ) where
 
 import Distribution.Server.Features.UserDetails.Types
 import Distribution.Server.Features.UserDetails.State
     (UserDetailsTable(..), emptyAccountDetails, emptyUserDetailsTable)
+import qualified Distribution.Server.Features.UserDetails.Store as Store
 import Distribution.Server.Framework
 import Distribution.Server.Framework.BackupDump
 import Distribution.Server.Features.UserDetails.Backup
@@ -73,6 +78,19 @@ makeAcidic ''UserDetailsTable [
     'setUserAdminInfo,
     'deleteUserDetails
   ]
+
+acidStore :: FilePath -> IO Store.Backend
+acidStore stateDir = do
+  userDetailsState <- userDetailsStateComponent stateDir
+  pure Store.Backend {
+      Store.backendStore = Store.Store {
+          Store.lookupUserDetails = \uid -> queryState userDetailsState (LookupUserDetails uid)
+        , Store.setUserDetails = \uid details -> updateState userDetailsState (SetUserDetails uid details)
+        , Store.setUserNameContact = \uid name email -> updateState userDetailsState (SetUserNameContact uid name email)
+        , Store.setUserAdminInfo = \uid kind notes -> updateState userDetailsState (SetUserAdminInfo uid kind notes)
+        }
+    , Store.backendState = [abstractAcidStateComponent userDetailsState]
+    }
 
 -------------------------
 -- State component
